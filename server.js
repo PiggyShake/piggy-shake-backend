@@ -7,6 +7,7 @@ var WebSocketServer = require('ws').Server
 
 var CHANNELS = [];
 var CLIENTS = [];
+var CLIENTS_MD5 = [];
 
 var redis = require('redis');
 var r_client = redis.createClient();
@@ -31,6 +32,17 @@ wss.on('connection', function(ws) {
     ws.on('close', function() {
         console.log('stopping client interval');
         //clearInterval(id);
+        var key = CLIENTS_MD5[md5(ws)];
+        delete CLIENTS[key];
+        delete CLIENTS_MD5[md5(ws)];
+    });
+
+    ws.on('error', function() {
+        console.log('ERROR');
+
+        var key = CLIENTS_MD5[md5(ws)];
+        delete CLIENTS[key];
+        delete CLIENTS_MD5[md5(ws)];
     });
 
     ws.on('message', function incoming(message) {
@@ -51,9 +63,10 @@ wss.on('connection', function(ws) {
             }
             console.log("Adding client");
             CLIENTS[shaker] = ws;
+            CLIENTS_MD5[md5(ws)] = shaker;
         }
         r_client.incr(user);
-        console.log("clients: " + CLIENTS.length)
+        console.log("clients")
 
         if(CHANNELS[channel] == null)
         {

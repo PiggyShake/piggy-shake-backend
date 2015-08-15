@@ -4,7 +4,7 @@
     <list default="true" id="de2b7f84-4235-49b1-923e-b8918da51378" name="Default" comment="" />
     <ignored path="piggy-shake-backend.iws" />
     <ignored path=".idea/workspace.xml" />
-    <file path="/server.js" changelist="de2b7f84-4235-49b1-923e-b8918da51378" time="1439671225471" ignored="false" />
+    <file path="/server.js" changelist="de2b7f84-4235-49b1-923e-b8918da51378" time="1439676342416" ignored="false" />
     <file path="/Dummy.txt" changelist="de2b7f84-4235-49b1-923e-b8918da51378" time="1439664980902" ignored="false" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -69,7 +69,7 @@
       <file leaf-file-name="server.js" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/server.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="27" column="6" selection-start="581" selection-end="581" vertical-scroll-proportion="0.16891892">
+            <state line="38" column="53" selection-start="900" selection-end="900" vertical-scroll-proportion="0.46846846">
               <folding />
             </state>
           </provider>
@@ -458,7 +458,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/server.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="27" column="6" selection-start="581" selection-end="581" vertical-scroll-proportion="0.16891892">
+        <state line="38" column="53" selection-start="900" selection-end="900" vertical-scroll-proportion="0.46846846">
           <folding />
         </state>
       </provider>
