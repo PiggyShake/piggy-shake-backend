@@ -25,7 +25,7 @@ server.listen(8080);
 var wss = new WebSocketServer({server: server});
 wss.on('connection', function(ws) {
 
-    ws.send("NEW USER JOINED");
+    //ws.send("NEW USER JOINED");
 
     console.log('started client interval');
     ws.on('close', function() {
