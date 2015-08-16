@@ -132,6 +132,5 @@ wss.on('connection', function(ws, req) {
         }
 
         console.log("CHANNEL_LIST: " + JSON.stringify(CHANNEL_LIST[channel]));
-        console.log("CLIENT_LIST: " + JSON.stringify(CLIENT_LIST[userDeviceID]));
     });
 });
