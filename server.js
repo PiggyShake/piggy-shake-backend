@@ -55,6 +55,7 @@ wss.on('connection', function(ws, req) {
         var sentObject = JSON.parse(message);
         var isShake = sentObject.shake == "true";
         var channel = "channel:" + sentObject.groupID;
+        channel = channel.toLowerCase().substr(0, 20);
 
         var user = "user:" + sentObject.devID;
         var isUserNew = false;
@@ -147,6 +148,7 @@ wss.on('connection', function(ws, req) {
             /**
              * Check if user was in a different channel
              */
+            console.log("CHANNEL_LIST: " + JSON.stringify(CHANNEL_LIST));
             CHANNEL_LIST.forEach(function each(chnl) {
                 console.log("Some channel: " + chnl)
                 if(chnl != channel)
