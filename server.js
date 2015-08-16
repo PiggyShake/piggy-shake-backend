@@ -117,7 +117,6 @@ wss.on('connection', function(ws, req) {
 
         }
 
-        console.log(JSON.stringify(CHANNEL_LIST[channel]));
         redisCli.incr(channel);
 
         if(isUserNew)
@@ -126,5 +125,7 @@ wss.on('connection', function(ws, req) {
             CHANNEL_LIST[channel].push(userDeviceID);
             CLIENT_LIST[userDeviceID].send("SHAKE: # users: " + CHANNEL_LIST[channel].length + ", " + redisCli.get(channel));
         }
+
+        console.log("CHANNEL_LIST: " + JSON.stringify(CHANNEL_LIST[channel]));
     });
 });
