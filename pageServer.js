@@ -3,14 +3,15 @@ var app = express();
 app.use(express.static('public'));
 var path = require('path');
 
-app.get('/', function (req, res) {
-    res.sendFile(getPath('index.html'));
-});
-
 function getPath(filename)
 {
     return path.join(__dirname, '/public', filename)
 }
+
+app.get('/', function (req, res) {
+    res.sendFile(getPath('index.html'));
+});
+
 
 var server = app.listen(80, function () {
     var host = server.address().address;
