@@ -54,6 +54,7 @@ wss.on('connection', function(ws, req) {
         console.log("On message: " + message);
         var sentObject = JSON.parse(message);
         var isShake = sentObject.shake == "true";
+        var username = sentObject.username;
         var channel = "channel:" + sentObject.groupID;
         channel = channel.toLowerCase().substr(0, 20);
 
@@ -115,13 +116,13 @@ wss.on('connection', function(ws, req) {
                      * Attempt sending message to user
                      */
                     try {
-                        var username =
+                        var message =
                         {
-                            name : "TestUser"
+                            name : username
                         }
-                        CLIENT_LIST[clientID].send(JSON.stringify(username));
+                        CLIENT_LIST[clientID].send(JSON.stringify(message));
 
-                        console.log(username.name + "Shook user: " + clientID);
+                        console.log(message.name + "Shook user: " + clientID);
                     }
                     catch (err) {
                         /**
