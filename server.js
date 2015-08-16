@@ -97,26 +97,39 @@ wss.on('connection', function(ws, req) {
             CHANNEL_LIST[channel] = [];
 
         } else {
+            /**
+             * Shake all channel users
+             */
             CHANNEL_LIST[channel].forEach(function each(clientID) {
                 if(userDeviceID == clientID)
                 {
-                    console.log("Found identical id");
+                    console.log("Found identical id : " + userDeviceID + ", " + clientID);
                     isUserNew = false;
                 }
 
+                /**
+                 * Attempt sending message to user
+                 */
                 try {
-                    CLIENT_LIST[clientID].send("SHAKE: # users: " + CHANNEL_LIST[channel].length + ", " + redisCli.get(channel));
+                    var username =
+                    {
+                        name : "TestUser"
+                    }
+                    CLIENT_LIST[clientID].send(JSON.stringify(username));
 
-                    console.log("Shook user: " + clientID);
+                    console.log(username.name + "Shook user: " + clientID);
                 }
                 catch (err) {
                     /**
-                     * If session errors, clear it
+                     * If session errors, clean the session
                      */
+
                     console.log("Removing user: " + clientID);
                     delete CLIENT_LIST[clientID];
 
-                    delete CHANNEL_LIST[channel][clientID];
+                    var index = CHANNEL_LIST[channel].indexOf(clientID);
+                    delete CHANNEL_LIST[channel][index];
+                    CHANNEL_LIST[channel].clean(undefined);
                 }
             });
 
@@ -131,6 +144,16 @@ wss.on('connection', function(ws, req) {
             CLIENT_LIST[userDeviceID].send("SHAKE: # users: " + CHANNEL_LIST[channel].length + ", " + redisCli.get(channel));
         }
 
-        console.log("CHANNEL_LIST: " + JSON.stringify(CHANNEL_LIST[channel]));
+        console.log("CHANNEL_LIST: " + channel + " - " + JSON.stringify(CHANNEL_LIST[channel]));
     });
 });
+
+Array.prototype.clean = function(deleteValue) {
+    for (var i = 0; i < this.length; i++) {
+        if (this[i] == deleteValue) {
+            this.splice(i, 1);
+            i--;
+        }
+    }
+    return this;
+};
