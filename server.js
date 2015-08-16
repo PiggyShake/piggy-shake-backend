@@ -57,7 +57,11 @@ wss.on('connection', function(ws, req) {
         var username = sentObject.username;
         console.log("Username: " + username);
         var channel = "channel:" + sentObject.groupID;
-        channel = channel.toLowerCase().substr(0, 20);
+        channel = channel.toLowerCase();
+        if(channel.length > 20)
+        {
+            channel.substr(0, 20);
+        }
 
         var user = "user:" + sentObject.devID;
         var isUserNew = false;
