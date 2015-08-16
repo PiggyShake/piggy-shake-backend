@@ -55,6 +55,7 @@ wss.on('connection', function(ws, req) {
         var sentObject = JSON.parse(message);
         var isShake = sentObject.shake == "true";
         var username = sentObject.username;
+        console.log("Username: " + username);
         var channel = "channel:" + sentObject.groupID;
         channel = channel.toLowerCase().substr(0, 20);
 
@@ -122,7 +123,7 @@ wss.on('connection', function(ws, req) {
                         }
                         CLIENT_LIST[clientID].send(JSON.stringify(message));
 
-                        console.log(message.name + "Shook user: " + clientID);
+                        console.log(message.name + " is shaking user: " + clientID);
                     }
                     catch (err) {
                         /**
