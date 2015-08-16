@@ -9,7 +9,7 @@ app.get('/', function (req, res) {
 
 function getPath(filename)
 {
-    return path.join(__dirname, '../public', filename)
+    return path.join(__dirname, '/public', filename)
 }
 
 var server = app.listen(80, function () {
