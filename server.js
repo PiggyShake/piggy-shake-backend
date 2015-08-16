@@ -54,6 +54,7 @@ wss.on('connection', function(ws, req) {
         console.log("On message: " + message);
         var sentObject = JSON.parse(message);
         var channel = "channel:" + sentObject.groupID;
+
         var user = "user:" + sentObject.devID;
         var isUserNew = false;
 
@@ -71,6 +72,8 @@ wss.on('connection', function(ws, req) {
             {
                 redisCli.set(user, 0);
             }
+
+            isUserNew = true;
         }
 
         CLIENT_LIST[userDeviceID] = ws;
@@ -97,6 +100,7 @@ wss.on('connection', function(ws, req) {
             CHANNEL_LIST[channel].forEach(function each(clientID) {
                 if(userDeviceID == clientID)
                 {
+                    console.log("Found identical id");
                     isUserNew = false;
                 }
 
@@ -111,6 +115,7 @@ wss.on('connection', function(ws, req) {
                      */
                     console.log("Removing user: " + clientID);
                     delete CLIENT_LIST[clientID];
+
                     delete CHANNEL_LIST[channel][clientID];
                 }
             });
@@ -127,5 +132,6 @@ wss.on('connection', function(ws, req) {
         }
 
         console.log("CHANNEL_LIST: " + JSON.stringify(CHANNEL_LIST[channel]));
+        console.log("CLIENT_LIST: " + JSON.stringify(CLIENT_LIST[userDeviceID]));
     });
 });
