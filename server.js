@@ -102,11 +102,14 @@ wss.on('connection', function(ws, req) {
 
                 try {
                     CLIENT_LIST[clientID].send("SHAKE: # users: " + CHANNEL_LIST[channel].length + ", " + redisCli.get(channel));
+
+                    console.log("Shook user: " + clientID);
                 }
                 catch (err) {
                     /**
                      * If session errors, clear it
                      */
+                    console.log("Removing user: " + clientID);
                     delete CLIENT_LIST[clientID];
                     delete CHANNEL_LIST[channel][clientID];
                 }
@@ -114,10 +117,12 @@ wss.on('connection', function(ws, req) {
 
         }
 
+        console.log(JSON.stringify(CHANNEL_LIST[channel]));
         redisCli.incr(channel);
 
         if(isUserNew)
         {
+            console.log("Adding new user: " + userDeviceID);
             CHANNEL_LIST[channel].push(userDeviceID);
             CLIENT_LIST[userDeviceID].send("SHAKE: # users: " + CHANNEL_LIST[channel].length + ", " + redisCli.get(channel));
         }
