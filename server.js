@@ -149,13 +149,13 @@ wss.on('connection', function(ws, req) {
              * Check if user was in a different channel
              */
             console.log("CHANNEL_LIST: " + JSON.stringify(CHANNEL_LIST));
-            CHANNEL_LIST.forEach(function each(chnl) {
-                console.log("Some channel: " + chnl)
-                if(chnl != channel)
-                {
-                    console.log("Other channel: " + chnl)
-                }
-            });
+            var size = 0, key;
+            for (key in CHANNEL_LIST) {
+                if (CHANNEL_LIST.hasOwnProperty(key))
+                    size++;
+            }
+
+            console.log("Channel List size: " + size);
 
             /**
              * Add user to this channel
