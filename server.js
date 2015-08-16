@@ -53,6 +53,7 @@ wss.on('connection', function(ws, req) {
     ws.on('message', function incoming(message) {
         console.log("On message: " + message);
         var sentObject = JSON.parse(message);
+        var isShake = sentObject.shake == "true";
         var channel = "channel:" + sentObject.groupID;
 
         var user = "user:" + sentObject.devID;
@@ -97,51 +98,73 @@ wss.on('connection', function(ws, req) {
             CHANNEL_LIST[channel] = [];
 
         } else {
-            /**
-             * Shake all channel users
-             */
-            CHANNEL_LIST[channel].forEach(function each(clientID) {
-                if(userDeviceID == clientID)
-                {
-                    console.log("Found identical id : " + userDeviceID + ", " + clientID);
-                    isUserNew = false;
-                }
-
+            if(isShake)
+            {
                 /**
-                 * Attempt sending message to user
+                 * Shake all channel users
                  */
-                try {
-                    var username =
+                CHANNEL_LIST[channel].forEach(function each(clientID) {
+                    if(userDeviceID == clientID)
                     {
-                        name : "TestUser"
+                        console.log("Found identical id : " + userDeviceID + ", " + clientID);
+                        isUserNew = false;
                     }
-                    CLIENT_LIST[clientID].send(JSON.stringify(username));
 
-                    console.log(username.name + "Shook user: " + clientID);
-                }
-                catch (err) {
                     /**
-                     * If session errors, clean the session
+                     * Attempt sending message to user
                      */
+                    try {
+                        var username =
+                        {
+                            name : "TestUser"
+                        }
+                        CLIENT_LIST[clientID].send(JSON.stringify(username));
 
-                    console.log("Removing user: " + clientID);
-                    delete CLIENT_LIST[clientID];
+                        console.log(username.name + "Shook user: " + clientID);
+                    }
+                    catch (err) {
+                        /**
+                         * If session errors, clean the session
+                         */
 
-                    var index = CHANNEL_LIST[channel].indexOf(clientID);
-                    delete CHANNEL_LIST[channel][index];
-                    CHANNEL_LIST[channel].clean(undefined);
-                }
-            });
+                        console.log("Removing user: " + clientID);
+                        delete CLIENT_LIST[clientID];
 
+                        var index = CHANNEL_LIST[channel].indexOf(clientID);
+                        delete CHANNEL_LIST[channel][index];
+                        CHANNEL_LIST[channel].clean(undefined);
+                    }
+                });
+            }
         }
 
         redisCli.incr(channel);
 
         if(isUserNew)
         {
+            console.log("isUserNew");
+            console.log("CHANNEL_LIST size - " + CHANNEL_LIST.length);
+            /**
+             * Check if user was in a different channel
+             */
+            CHANNEL_LIST.forEach(function each(chnl) {
+                console.log("Some channel: " + chnl)
+                if(chnl != channel)
+                {
+                    console.log("Other channel: " + chnl)
+                }
+            });
+
+            /**
+             * Add user to this channel
+             * */
             console.log("Adding new user: " + userDeviceID);
             CHANNEL_LIST[channel].push(userDeviceID);
-            CLIENT_LIST[userDeviceID].send("SHAKE: # users: " + CHANNEL_LIST[channel].length + ", " + redisCli.get(channel));
+
+            if(isShake)
+            {
+                CLIENT_LIST[userDeviceID].send("SHAKE: # users: " + CHANNEL_LIST[channel].length + ", " + redisCli.get(channel));
+            }
         }
 
         console.log("CHANNEL_LIST: " + channel + " - " + JSON.stringify(CHANNEL_LIST[channel]));
