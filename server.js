@@ -55,6 +55,10 @@ wss.on('connection', function(ws, req) {
         var sentObject = JSON.parse(message);
         var isShake = sentObject.shake == "true";
         var username = sentObject.username;
+        if(username.length > 20)
+        {
+            username.substr(0, 20);
+        }
         console.log("Username: " + username);
         var channel = "channel:" + sentObject.groupID;
         channel = channel.toLowerCase();
