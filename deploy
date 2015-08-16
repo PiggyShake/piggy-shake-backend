@@ -1,1 +1,1 @@
-killPort8080 && sudo node server.js && sudo node pageServer.js
+./killPort8080 && sudo node server.js && sudo node pageServer.js
