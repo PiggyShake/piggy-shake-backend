@@ -1,137 +1,125 @@
 var WebSocketServer = require('ws').Server
     , http = require('http')
+    , server = http.createServer(app, function() {})
+    , wss = new WebSocketServer({server: server})
     , express = require('express')
     , app = express()
-    , md5 = require('md5');
+    , redis = require('redis')
+    , redisCli = redis.createClient();
+
+/**
+ * key: channel name
+ * value: array of client keys
+ * @type {Array}
+ */
+var CHANNEL_LIST = [];
+
+/**
+ * key: device id
+ * value: user session
+ * @type {Array}
+ */
+var CLIENT_LIST = [];
 
 
-var CHANNELS = [];
-var CLIENTS = [];
-var CLIENTS_MD5 = [];
-
-var redis = require('redis');
-var r_client = redis.createClient();
-
-
-r_client.on('connect', function() {
+redisCli.on('connect', function() {
     console.log('connected to redis');
-    //id = r_client.get("lastId");
 });
 
 app.use(express.static(__dirname + '/public'));
 
-var server = http.createServer(app);
 server.listen(8080);
 
-var wss = new WebSocketServer({server: server});
-wss.on('connection', function(ws) {
-
-    //ws.send("NEW USER JOINED");
-
+wss.on('connection', function(ws, req) {
     console.log('started client interval');
-    ws.on('close', function() {
+
+    /**
+     * On user session closed
+     */
+    ws.on('close', function close() {
         console.log('stopping client interval');
-        //clearInterval(id);
-        var key = CLIENTS_MD5[md5(ws)];
-        delete CLIENTS[key];
-        delete CLIENTS_MD5[md5(ws)];
     });
 
-    ws.on('error', function() {
+    /**
+     * On user session error
+     */
+    ws.on('error', function () {
         console.log('ERROR');
-
-        var key = CLIENTS_MD5[md5(ws)];
-        delete CLIENTS[key];
-        delete CLIENTS_MD5[md5(ws)];
     });
 
+    /**
+     * On user message sent
+     */
     ws.on('message', function incoming(message) {
-        console.log("Message: " + message);
+        console.log("On message: " + message);
         var sentObject = JSON.parse(message);
         var channel = "channel:" + sentObject.groupID;
         var user = "user:" + sentObject.devID;
-        console.log("Users: " + CHANNELS[channel]);
-        var isNew = false;
+        var isUserNew = false;
 
-        var shaker = sentObject.devID;
+        var userDeviceID = sentObject.devID;
 
-        if(CLIENTS[shaker] == null)
+        /**
+         * Add user ref
+         */
+        if(CLIENT_LIST[userDeviceID] == null)
         {
-            if(r_client.get(user) == null)
+            /**
+             * Init User Score in redis
+             */
+            if(redisCli.get(user) == null)
             {
-                r_client.set(user, 0);
+                redisCli.set(user, 0);
             }
-            console.log("Adding client");
-            CLIENTS[shaker] = ws;
-            CLIENTS_MD5[md5(ws)] = shaker;
         }
-        r_client.incr(user);
-        console.log("clients")
 
-        if(CHANNELS[channel] == null)
+        CLIENT_LIST[userDeviceID] = ws;
+        redisCli.incr(user);
+
+        /**
+         * Add channel ref
+         */
+        if(CHANNEL_LIST[channel] == null)
         {
-            if(r_client.get(channel) == null)
+            /**
+             * Init Channel Score in redis
+             */
+            if(redisCli.get(channel) == null)
             {
-                r_client.set(channel, 0);
+                redisCli.set(channel, 0);
             }
 
-            console.log("Adding channel");
+            isUserNew = true;
 
-            isNew = true;
-
-            CHANNELS[channel] = [];
+            CHANNEL_LIST[channel] = [];
 
         } else {
-            console.log("size: " + CHANNELS.length)
-
-            console.log("Channels: " + CHANNELS);
-            CHANNELS[channel].forEach(function each(client) {
-                console.log("client: " + client);
-                console.log("shaker: " + shaker);
-                if(shaker == client)
+            CHANNEL_LIST[channel].forEach(function each(clientID) {
+                if(userDeviceID == clientID)
                 {
-                    isNew = false;
+                    isUserNew = false;
                 }
 
-                CLIENTS[client].send("SHAKE: # users: " + CHANNELS[channel].length + ", " + r_client.get(channel));
+                try {
+                    CLIENT_LIST[clientID].send("SHAKE: # users: " + CHANNEL_LIST[channel].length + ", " + redisCli.get(channel));
+                }
+                catch (err) {
+                    /**
+                     * If session errors, clear it
+                     */
+                    delete CLIENT_LIST[clientID];
+                    delete CHANNEL_LIST[channel][clientID];
+                }
             });
 
         }
 
-        r_client.incr(channel);
+        redisCli.incr(channel);
 
-        if(isNew)
+        if(isUserNew)
         {
-            console.log("New user");
-            CHANNELS[channel].push(shaker);
-            CLIENTS[shaker].send("SHAKE: # users: " + CHANNELS[channel].length + ", " + r_client.get(channel));
+            CHANNEL_LIST[channel].push(userDeviceID);
+            CLIENT_LIST[userDeviceID].send("SHAKE: # users: " + CHANNEL_LIST[channel].length + ", " + redisCli.get(channel));
         }
     });
-
 });
-
-function objectEquals(x, y) {
-    'use strict';
-
-    if (x === null || x === undefined || y === null || y === undefined) { return x === y; }
-    // after this just checking type of one would be enough
-    if (x.constructor !== y.constructor) { return false; }
-    // if they are functions, they should exactly refer to same one (because of closures)
-    if (x instanceof Function) { return x === y; }
-    // if they are regexps, they should exactly refer to same one (it is hard to better equality check on current ES)
-    if (x instanceof RegExp) { return x === y; }
-    if (x === y || x.valueOf() === y.valueOf()) { return true; }
-    if (Array.isArray(x) && x.length !== y.length) { return false; }
-
-    // if they are dates, they must had equal valueOf
-    if (x instanceof Date) { return false; }
-
-    // if they are strictly equal, they both need to be object at least
-    if (!(x instanceof Object)) { return false; }
-    if (!(y instanceof Object)) { return false; }
-
-    // recursive object equality check
-    var p = Object.keys(x);
-    return Object.keys(y).every(function (i) { return p.indexOf(i) !== -1; }) &&
-        p.every(function (i) { return objectEquals(x[i], y[i]); });
-}
