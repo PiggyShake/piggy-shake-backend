@@ -141,9 +141,9 @@ wss.on('connection', function(ws, req) {
                         console.log("Removing user: " + clientID);
                         delete CLIENT_LIST[clientID];
 
-                        var index = CHANNEL_LIST[channel].indexOf(clientID);
-                        delete CHANNEL_LIST[channel][index];
-                        CHANNEL_LIST[channel].clean(undefined);
+//                        var index = CHANNEL_LIST[channel].indexOf(clientID);
+                        delete CHANNEL_LIST[channel][clientID];
+//                        CHANNEL_LIST[channel].clean(undefined);
                     }
                 });
             }
