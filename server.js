@@ -91,7 +91,7 @@ wss.on('connection', function(ws, req) {
                 console.log("User exists");
                 //Check if user was in another channel
                 redisCli.hget(user,CHANNEL_KEY, function (err, obj) {
-                    var multi = redis_client.multi();
+                    var multi = redisCli.multi();
                     var lastChannelName = obj;
 
                     console.log("Last channel: " + lastChannelName);
