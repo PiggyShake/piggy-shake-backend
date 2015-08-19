@@ -14,7 +14,8 @@ var WebSocketServer = require('ws').Server
  */
 var SESSION_LIST = [];
 var MAX_LENGTH = 25;
-var CHANNEL_KEY = "channel:";
+var CHANNEL_KEY = "channel";
+var CHANNEL_SET = "channel:";
 
 
 redisCli.on('connect', function() {
@@ -74,8 +75,8 @@ wss.on('connection', function(ws, req) {
         {
             channelName.substr(0, MAX_LENGTH);
         }
-        var channel = CHANNEL_KEY + channelName;
-        console.log(CHANNEL_KEY + " " + channel);
+        var channel = CHANNEL_SET + channelName;
+        console.log(channel);
 
         //Update user in channel
         console.log("Attempt to add message \"" + message + "\" from " + user + " to " + channel);
@@ -84,19 +85,19 @@ wss.on('connection', function(ws, req) {
         //Check if user exists
         console.log("Checking if user exists");
         redisCli.hexists(user,CHANNEL_KEY, function(err,rep) {
+            console.log("Reply " + rep);
             if(rep===1)
             {
                 console.log("User exists");
                 //Check if user was in another channel
                 redisCli.hget(user,CHANNEL_KEY, function (err, obj) {
-                    var lastChanName = obj;
+                    var lastChannelName = obj;
 
-                    console.log("User " + user + " was in " + lastChanName);
-                    var lastChan = CHANNEL_KEY + lastChanName;
-                    if(lastChan.localeCompare(channel))
+                    console.log("Last channel: " + lastChannelName);
+                    if(lastChannelName.localeCompare(channelName))
                     {
-                        console.log("Removing user from previous channel: " + lastChan);
-                        redisCli.hdel(lastChan, user);
+                        console.log("Removing user from previous channel: " + lastChannelName);
+                        redisCli.hdel(CHANNEL_SET + lastChannelName, user);
                     }
                 });
 
@@ -130,12 +131,12 @@ wss.on('connection', function(ws, req) {
                         var shakeMessage =
                         {
                             name : message
-                        }
+                        };
 
                         //Attempt sending message to user
                         SESSION_LIST[chanUser].send(JSON.stringify(shakeMessage));
 
-                        console.log(shakeMessage.name + " is shaking user: " + chanUser)
+                        console.log("Shaking user: " + chanUser + " with message: " + message);
                     }
                 });
             });
