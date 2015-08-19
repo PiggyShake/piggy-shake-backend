@@ -91,21 +91,30 @@ wss.on('connection', function(ws, req) {
                 console.log("User exists");
                 //Check if user was in another channel
                 redisCli.hget(user,CHANNEL_KEY, function (err, obj) {
+                    var multi = redis_client.multi();
                     var lastChannelName = obj;
 
                     console.log("Last channel: " + lastChannelName);
                     if(lastChannelName.localeCompare(channelName))
                     {
                         console.log("Removing user from previous channel: " + lastChannelName);
-                        redisCli.hdel(CHANNEL_SET + lastChannelName, user);
+                        multi.hdel(CHANNEL_SET + lastChannelName, user);
                     }
+
+                    console.log("Adding channel " + channelName + " to user");
+                    multi.hset(user,CHANNEL_KEY,channelName);
+                    console.log("User added");
+
+                    multi.exec(function (err, replies) {
+                        console.log("MULTI got " + replies.length + "replies");
+                    });
                 });
-
             }
-
-            console.log("Adding channel " + channelName + " to user");
-            redisCli.hset(user,CHANNEL_KEY,channelName);
-            console.log("User added");
+            else {
+                console.log("Adding channel " + channelName + " to user");
+                redisCli.hset(user,CHANNEL_KEY,channelName);
+                console.log("User added");
+            }
         });
 
         console.log("Is shake? " + isShake);
