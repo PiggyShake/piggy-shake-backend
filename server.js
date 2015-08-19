@@ -14,6 +14,7 @@ var WebSocketServer = require('ws').Server
  */
 var SESSION_LIST = [];
 var MAX_LENGTH = 25;
+var CHANNEL_KEY = "channel:";
 
 
 redisCli.on('connect', function() {
@@ -73,16 +74,45 @@ wss.on('connection', function(ws, req) {
         {
             channelName.substr(0, MAX_LENGTH);
         }
-        var channel = "channel:" + channelName;
-        console.log("channel: " + channel);
+        var channel = CHANNEL_KEY + channelName;
+        console.log(CHANNEL_KEY + " " + channel);
 
         //Update user in channel
-        console.log("Attempt to add message \"" + message + "\" from " + user + ") to " + channel);
+        console.log("Attempt to add message \"" + message + "\" from " + user + " to " + channel);
         redisCli.hset(channel, user, message);
 
+        //Check if user exists
+        console.log("Checking if user exists");
+        redisCli.hexists(user,CHANNEL_KEY, function(err,rep) {
+            if(rep===1)
+            {
+                console.log("User exists");
+                //Check if user was in another channel
+                redisCli.hget(user,CHANNEL_KEY, function (err, obj) {
+                    var lastChanName = obj;
+
+                    console.log("User " + user + " was in " + lastChanName);
+                    var lastChan = CHANNEL_KEY + lastChanName;
+                    if(lastChan.localeCompare(channel))
+                    {
+                        console.log("Removing user from previous channel: " + lastChan);
+                        redisCli.hdel(lastChan, user);
+                    }
+                });
+
+
+            } else {
+                console.log("Adding channel " + channelName + " to user");
+                redisCli.hset(user,CHANNEL_KEY,channelName);
+                console.log("User added");
+            }
+        });
+
+        console.log("Is shake? " + isShake);
         if(isShake)
         {
             //Shake all channel users
+            console.log("Shaking");
             redisCli.hkeys(channel, function (err, chanUsers) {
                 var numUsersString = "user";
                 if(chanUsers.length > 1)
