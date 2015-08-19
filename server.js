@@ -100,12 +100,11 @@ wss.on('connection', function(ws, req) {
                     }
                 });
 
-
-            } else {
-                console.log("Adding channel " + channelName + " to user");
-                redisCli.hset(user,CHANNEL_KEY,channelName);
-                console.log("User added");
             }
+
+            console.log("Adding channel " + channelName + " to user");
+            redisCli.hset(user,CHANNEL_KEY,channelName);
+            console.log("User added");
         });
 
         console.log("Is shake? " + isShake);
