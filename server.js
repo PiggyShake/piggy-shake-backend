@@ -8,18 +8,12 @@ var WebSocketServer = require('ws').Server
     , redisCli = redis.createClient();
 
 /**
- * key: channel name
- * value: array of client keys
- * @type {Array}
- */
-var CHANNEL_LIST = [];
-
-/**
  * key: device id
  * value: user session
  * @type {Array}
  */
-var CLIENT_LIST = [];
+var SESSION_LIST = [];
+var MAX_LENGTH = 25;
 
 
 redisCli.on('connect', function() {
@@ -52,129 +46,71 @@ wss.on('connection', function(ws, req) {
      */
     ws.on('message', function incoming(message) {
         console.log("On message: " + message);
+        //Get request object
         var sentObject = JSON.parse(message);
+
+        //Get shake info
         var isShake = sentObject.shake == "true";
-        var username = sentObject.username;
-        if(username.length > 20)
-        {
-            username.substr(0, 20);
-        }
-        console.log("Username: " + username);
-        var channel = "channel:" + sentObject.groupID;
-        channel = channel.toLowerCase();
-        if(channel.length > 20)
-        {
-            channel.substr(0, 20);
-        }
+        console.log("isShake: " + isShake);
 
+        //Get message info
+        var message = sentObject.username;
+        if(message.length > MAX_LENGTH)
+        {
+            message.substr(0, MAX_LENGTH);
+        }
+        console.log("message: " + message);
+
+        //Update user session
         var user = "user:" + sentObject.devID;
-        var isUserNew = false;
+        SESSION_LIST[user] = ws;
+        console.log("User " + user + " session update");
 
-        var userDeviceID = sentObject.devID;
-
-        /**
-         * Add user ref
-         */
-        if(CLIENT_LIST[userDeviceID] == null)
+        //Get channel info
+        var channelName = sentObject.groupID
+        channelName = channelName.toLowerCase();
+        if(channelName.length > MAX_LENGTH)
         {
-            /**
-             * Init User Score in redis
-             */
-            if(redisCli.get(user) == null)
-            {
-                redisCli.set(user, 0);
-            }
-
-            isUserNew = true;
+            channelName.substr(0, MAX_LENGTH);
         }
+        var channel = "channel:" + channelName;
+        console.log("channel: " + channel);
 
-        CLIENT_LIST[userDeviceID] = ws;
-        redisCli.incr(user);
+        //Update user in channel
+        console.log("Attempt to add message \"" + message + "\" from " + user + ") to " + channel);
+        redisCli.hset(channel, user, message);
 
-        /**
-         * Add channel ref
-         */
-        if(CHANNEL_LIST[channel] == null)
+        if(isShake)
         {
-            /**
-             * Init Channel Score in redis
-             */
-            if(redisCli.get(channel) == null)
-            {
-                redisCli.set(channel, 0);
-            }
+            //Shake all channel users
+            redisCli.hkeys(channel, function (err, chanUsers) {
+                var numUsersString = "user";
+                if(chanUsers.length > 1)
+                {
+                    numUsersString += "s";
+                }
+                console.log(chanUsers.length + " " + numUsersString);
 
-            isUserNew = true;
-
-            CHANNEL_LIST[channel] = [];
-
-        } else {
-            if(isShake)
-            {
-                /**
-                 * Shake all channel users
-                 */
-                CHANNEL_LIST[channel].forEach(function each(clientID) {
-                    if(userDeviceID == clientID)
+                chanUsers.forEach(function each(chanUser) {
+                    console.log("Attempting shake to user: " + chanUser);
+                    if(SESSION_LIST[chanUser] != undefined)
                     {
-                        console.log("Found identical id : " + userDeviceID + ", " + clientID);
-                        isUserNew = false;
-                    }
+                        console.log("User Session found: " + chanUser);
 
-                    /**
-                     * Attempt sending message to user
-                     */
-                    try {
-                        var message =
+                        //Forming shake response
+                        var shakeMessage =
                         {
-                            name : username
+                            name : message
                         }
-                        CLIENT_LIST[clientID].send(JSON.stringify(message));
 
-                        console.log(message.name + " is shaking user: " + clientID);
-                    }
-                    catch (err) {
-                        /**
-                         * If session errors, clean the session
-                         */
+                        //Attempt sending message to user
+                        SESSION_LIST[chanUser].send(JSON.stringify(shakeMessage));
 
-                        console.log("Removing user: " + clientID);
-                        delete CLIENT_LIST[clientID];
-
-//                        var index = CHANNEL_LIST[channel].indexOf(clientID);
-                        delete CHANNEL_LIST[channel][clientID];
-//                        CHANNEL_LIST[channel].clean(undefined);
+                        console.log(shakeMessage.name + " is shaking user: " + chanUser)
                     }
                 });
-            }
+            });
         }
-
-        redisCli.incr(channel);
-
-        if(isUserNew)
-        {
-            /**
-             * Add user to this channel
-             * */
-            console.log("Adding new user: " + userDeviceID);
-            CHANNEL_LIST[channel].push(userDeviceID);
-
-            if(isShake)
-            {
-                CLIENT_LIST[userDeviceID].send("SHAKE: # users: " + CHANNEL_LIST[channel].length + ", " + redisCli.get(channel));
-            }
-        }
-
-        console.log("CHANNEL_LIST: " + channel + " - " + JSON.stringify(CHANNEL_LIST[channel]));
+//        redisCli.quit();
     });
 });
-
-Array.prototype.clean = function(deleteValue) {
-    for (var i = 0; i < this.length; i++) {
-        if (this[i] == deleteValue) {
-            this.splice(i, 1);
-            i--;
-        }
-    }
-    return this;
-};
